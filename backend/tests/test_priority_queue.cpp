@@ -50,7 +50,7 @@ void test2_Persistence() {
         
         cout << "\nAlerts in queue:" << endl;
         pq.display();
-        
+        pq.saveToDisk();
         cout << "\n[Saving to disk...]" << endl;
     }
     
@@ -103,6 +103,7 @@ void test3_RealTimeProcessing() {
         cout << "\n--- Processing Alert #" << count++ << " ---" << endl;
         Alert alert = pq.extractMin();
         alert.display();
+        
         this_thread::sleep_for(chrono::milliseconds(300));
     }
     
