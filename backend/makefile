@@ -1,21 +1,24 @@
 # Compiler settings
 CXX := g++
 CXXFLAGS := -std=c++11 -Wall -g
-LDFLAGS :=
+LDFLAGS := -pthread
+
 
 # Directories
 SRC_DIR := src
 DATA_STRUCT_DIR := $(SRC_DIR)/data_structures
 MODELS_DIR := $(SRC_DIR)/models
 TESTS_DIR := tests
+INCLUDE_DIR := include
 
 # Include paths
-INCLUDES := -I$(SRC_DIR) -I$(DATA_STRUCT_DIR) -I$(MODELS_DIR)
+INCLUDES := -I$(SRC_DIR) -I$(DATA_STRUCT_DIR) -I$(MODELS_DIR) -I$(INCLUDE_DIR)
 
 # Targets
 TARGET_BTREE := test_btree
 TARGET_HASHTABLE := test_hashtable
 TARGET_PRIORITY_QUEUE := test_priority_queue
+TARGET_SERVER := server
 
 # Source files for B-tree
 SOURCES_BTREE := \
@@ -36,15 +39,26 @@ SOURCES_PRIORITY_QUEUE := \
 	$(MODELS_DIR)/alert.cpp \
 	$(TESTS_DIR)/test_priority_queue.cpp	
 
+# Source files for server
+SOURCES_SERVER := \
+	$(SRC_DIR)/server.cpp \
+	$(DATA_STRUCT_DIR)/btree.cpp \
+	$(DATA_STRUCT_DIR)/hash_table.cpp \
+	$(DATA_STRUCT_DIR)/priority_queue.cpp \
+	$(MODELS_DIR)/vital_record.cpp \
+	$(MODELS_DIR)/patient.cpp \
+	$(MODELS_DIR)/medication.cpp \
+	$(MODELS_DIR)/alert.cpp	
+
 # Object files
 OBJECTS_BTREE := $(SOURCES_BTREE:.cpp=.o)
 OBJECTS_HASHTABLE := $(SOURCES_HASHTABLE:.cpp=.o)
 OBJECTS_PRIORITY_QUEUE := $(SOURCES_PRIORITY_QUEUE:.cpp=.o)
+OBJECTS_SERVER := $(SOURCES_SERVER:.cpp=.o)
 
 # Default target
 .PHONY: all
-all: $(TARGET_BTREE) $(TARGET_HASHTABLE) $(TARGET_PRIORITY_QUEUE)
-
+all: $(TARGET_BTREE) $(TARGET_HASHTABLE) $(TARGET_PRIORITY_QUEUE) $(TARGET_SERVER)
 # Build B-tree test
 $(TARGET_BTREE): $(OBJECTS_BTREE)
 	$(CXX) $(LDFLAGS) -o $@ $^
@@ -58,6 +72,10 @@ $(TARGET_HASHTABLE): $(OBJECTS_HASHTABLE)
 $(TARGET_PRIORITY_QUEUE): $(OBJECTS_PRIORITY_QUEUE)
 	$(CXX) $(LDFLAGS) -o $@ $^
 	@echo "✅ Priority Queue test compiled successfully!"
+# Build server
+$(TARGET_SERVER): $(OBJECTS_SERVER)
+	$(CXX) $(LDFLAGS) -o $@ $^
+	@echo "✅ Server compiled successfully!"
 
 # Build only B-tree
 .PHONY: btree
@@ -70,6 +88,10 @@ hashtable: $(TARGET_HASHTABLE)
 # Build only Priority Queue
 .PHONY: priority_queue
 priority_queue: $(TARGET_PRIORITY_QUEUE)
+
+# Build only server
+.PHONY: server
+server: $(TARGET_SERVER)
 
 # Compile .cpp → .o
 %.o: %.cpp
@@ -93,14 +115,19 @@ run-priority-queue: $(TARGET_PRIORITY_QUEUE)
 	@echo "Running Priority Queue tests..."
 	./$(TARGET_PRIORITY_QUEUE)
 
-# Run both tests
+# Run server
+.PHONY: run-server
+run-server: $(TARGET_SERVER)
+	@echo "Running server..."
+	./$(TARGET_SERVER)
+
+# Run all tests
 .PHONY: run
-run: run-btree run-hashtable run-priority-queue
-# Clean
+run: run-btree run-hashtable run-priority-queue run-server
 .PHONY: clean
 clean:
-	rm -f $(OBJECTS_BTREE) $(OBJECTS_HASHTABLE) $(OBJECTS_PRIORITY_QUEUE)
-	rm -f $(TARGET_BTREE) $(TARGET_HASHTABLE) $(TARGET_PRIORITY_QUEUE)
+	rm -f $(OBJECTS_BTREE) $(OBJECTS_HASHTABLE) $(OBJECTS_PRIORITY_QUEUE) $(OBJECTS_SERVER)
+	rm -f $(TARGET_BTREE) $(TARGET_HASHTABLE) $(TARGET_PRIORITY_QUEUE) $(TARGET_SERVER)
 	rm -f *.bin
 	@echo "🧹 Cleaned all build files"
 
@@ -125,3 +152,5 @@ help:
 	@echo "  make help"
 	@echo "  make priority_queue"
 	@echo "  make run-priority-queue"
+	@echo "  make server"
+	@echo "  make run-server"
