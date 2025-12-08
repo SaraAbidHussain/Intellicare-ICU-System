@@ -2,6 +2,16 @@
 #include <iostream>
 #include <iomanip>
 
+VitalRecord::VitalRecord() 
+    : patientID(0), timestamp(0), heart_rate(0), 
+      systolic_bp(0), diastolic_bp(0), spo2(0), 
+      temperature(0.0), diskPosition(-1) {}
+
+VitalRecord::VitalRecord(int pid, long ts, int hr, int sbp, int dbp, int sp, float temp)
+    : patientID(pid), timestamp(ts), heart_rate(hr), 
+      systolic_bp(sbp), diastolic_bp(dbp), spo2(sp), 
+      temperature(temp), diskPosition(-1) {}
+
 void VitalRecord::display() const {
     std::cout << "Patient: " << patientID 
               << " | Time: " << timestamp
@@ -12,7 +22,6 @@ void VitalRecord::display() const {
               << temperature << "°C" << std::endl;
 }
 
-// Write record to disk in binary format
 void VitalRecord::writeToDisk(std::ofstream& file) const {
     file.write(reinterpret_cast<const char*>(&patientID), sizeof(patientID));
     file.write(reinterpret_cast<const char*>(&timestamp), sizeof(timestamp));
@@ -23,7 +32,6 @@ void VitalRecord::writeToDisk(std::ofstream& file) const {
     file.write(reinterpret_cast<const char*>(&temperature), sizeof(temperature));
 }
 
-// Read record from disk
 void VitalRecord::readFromDisk(std::ifstream& file) {
     file.read(reinterpret_cast<char*>(&patientID), sizeof(patientID));
     file.read(reinterpret_cast<char*>(&timestamp), sizeof(timestamp));
@@ -32,4 +40,8 @@ void VitalRecord::readFromDisk(std::ifstream& file) {
     file.read(reinterpret_cast<char*>(&diastolic_bp), sizeof(diastolic_bp));
     file.read(reinterpret_cast<char*>(&spo2), sizeof(spo2));
     file.read(reinterpret_cast<char*>(&temperature), sizeof(temperature));
+}
+
+size_t VitalRecord::getDiskSize() {
+    return sizeof(int) * 5 + sizeof(long) + sizeof(float);
 }

@@ -1,58 +1,74 @@
-#ifndef BTREE_H
-#define BTREE_H
+#ifndef BTREE_DISK_H
+#define BTREE_DISK_H
 
 #include <vector>
-#include <iostream>
-#include <fstream>
 #include <string>
+#include <fstream>
+#include <map>
 #include "../models/vital_record.h"
 
-class BTreeNode {
-public:
-    std::vector<long> keys;
-    std::vector<VitalRecord> records;
-    std::vector<BTreeNode*> children;
+// Maximum keys per node (for fixed-size disk allocation)
+const int MAX_KEYS = 99;  // For degree 50
+
+struct DiskBTreeNode {
     bool isLeaf;
     int minDegree;
+    int numKeys;
+    long keys[MAX_KEYS];
+    long dataPositions[MAX_KEYS];
+    long childPositions[MAX_KEYS + 1];
+    long diskPosition;
     
-    BTreeNode(int degree, bool leaf);
+    DiskBTreeNode(int degree, bool leaf);
     
-    void insertNonFull(long key, VitalRecord record);
-    void splitChild(int index, BTreeNode* child);
-    BTreeNode* search(long key);
-    void traverse();
-    int findKey(long key);
-    void rangeQuery(long startKey, long endKey, std::vector<VitalRecord>& results);
-    
-    // Disk I/O methods
+    static size_t getDiskSize();
     void writeToDisk(std::ofstream& file);
     void readFromDisk(std::ifstream& file);
-    
-    friend class BTree;
 };
 
-class BTree {
+class DiskBTree {
 private:
-    BTreeNode* root;
     int minDegree;
-    std::string dataFilePath;  // Path to data file
+    long rootPosition;
+    std::string indexFilePath;
+    std::string dataFilePath;
+    std::string metaFilePath;
     
-    void deleteTree(BTreeNode* node);
-    void saveNode(BTreeNode* node, std::ofstream& file);
-    BTreeNode* loadNode(std::ifstream& file);
+    // Metadata
+    long nextNodePosition;
+    long nextDataPosition;
+    int totalRecords;
+    
+    // Helper functions
+    DiskBTreeNode* loadNode(long position);
+    void saveNode(DiskBTreeNode* node);
+    void deleteNode(DiskBTreeNode* node);
+    
+    long allocateNodePosition();
+    long allocateDataPosition();
+    
+    void insertNonFull(DiskBTreeNode* node, long key, long dataPos);
+    void splitChild(DiskBTreeNode* parent, int index);
+    
+    DiskBTreeNode* searchNode(DiskBTreeNode* node, long key);
+    void rangeQueryHelper(DiskBTreeNode* node, long startKey, long endKey, 
+                         std::vector<VitalRecord>& results);
+    
+    void saveMeta();
+    void loadMeta();
+    
+    VitalRecord loadRecord(long position);
+    long saveRecord(const VitalRecord& record);
     
 public:
-    BTree(int degree, const std::string& filePath = "btree_data.bin");
-    ~BTree();
+    DiskBTree(int degree, const std::string& basePath);
+    ~DiskBTree();
     
-    void insert(long timestamp, VitalRecord record);
+    void insert(long timestamp, const VitalRecord& record);
     VitalRecord* search(long timestamp);
-    void traverse();
     std::vector<VitalRecord> rangeQuery(long startTime, long endTime);
     
-    // Persistence methods
-    void saveToDisk();
-    void loadFromDisk();
+    int getRecordCount() const { return totalRecords; }
 };
 
 #endif

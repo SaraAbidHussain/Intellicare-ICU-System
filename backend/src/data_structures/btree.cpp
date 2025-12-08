@@ -1,371 +1,378 @@
-#include "btree.h"
-#include <algorithm>
+#include "btree_disk.h"
+#include <iostream>
 #include <cstring>
 
-// ==================== BTreeNode Implementation ====================
+// ==================== DiskBTreeNode ====================
 
-BTreeNode::BTreeNode(int degree, bool leaf) {
-    minDegree = degree;
-    isLeaf = leaf;
+DiskBTreeNode::DiskBTreeNode(int degree, bool leaf)
+    : isLeaf(leaf), minDegree(degree), numKeys(0), diskPosition(-1) {
+    memset(keys, 0, sizeof(keys));
+    memset(dataPositions, 0, sizeof(dataPositions));
+    memset(childPositions, 0, sizeof(childPositions));
 }
 
-int BTreeNode::findKey(long key) {
-    int index = 0;
-    while (index < keys.size() && keys[index] < key) {
-        index++;
-    }
-    return index;
+size_t DiskBTreeNode::getDiskSize() {
+    return sizeof(bool) + sizeof(int) * 2 + 
+           sizeof(long) * MAX_KEYS * 2 + 
+           sizeof(long) * (MAX_KEYS + 1) +
+           sizeof(long);
 }
 
-void BTreeNode::traverse() {
-    int i;
-    for (i = 0; i < keys.size(); i++) {
-        if (!isLeaf) {
-            children[i]->traverse();
-        }
-        std::cout << "Timestamp: " << keys[i] << " -> ";
-        records[i].display();
-    }
+void DiskBTreeNode::writeToDisk(std::ofstream& file) {
+    file.write(reinterpret_cast<const char*>(&isLeaf), sizeof(isLeaf));
+    file.write(reinterpret_cast<const char*>(&minDegree), sizeof(minDegree));
+    file.write(reinterpret_cast<const char*>(&numKeys), sizeof(numKeys));
+    file.write(reinterpret_cast<const char*>(keys), sizeof(keys));
+    file.write(reinterpret_cast<const char*>(dataPositions), sizeof(dataPositions));
+    file.write(reinterpret_cast<const char*>(childPositions), sizeof(childPositions));
+    file.write(reinterpret_cast<const char*>(&diskPosition), sizeof(diskPosition));
+}
+
+void DiskBTreeNode::readFromDisk(std::ifstream& file) {
+    file.read(reinterpret_cast<char*>(&isLeaf), sizeof(isLeaf));
+    file.read(reinterpret_cast<char*>(&minDegree), sizeof(minDegree));
+    file.read(reinterpret_cast<char*>(&numKeys), sizeof(numKeys));
+    file.read(reinterpret_cast<char*>(keys), sizeof(keys));
+    file.read(reinterpret_cast<char*>(dataPositions), sizeof(dataPositions));
+    file.read(reinterpret_cast<char*>(childPositions), sizeof(childPositions));
+    file.read(reinterpret_cast<char*>(&diskPosition), sizeof(diskPosition));
+}
+
+// ==================== DiskBTree ====================
+
+DiskBTree::DiskBTree(int degree, const std::string& basePath)
+    : minDegree(degree), rootPosition(0), 
+      indexFilePath(basePath + "_index.dat"),
+      dataFilePath(basePath + "_data.dat"),
+      metaFilePath(basePath + "_meta.dat"),
+      nextNodePosition(0), nextDataPosition(0), totalRecords(0) {
     
-    if (!isLeaf) {
-        children[i]->traverse();
+    // Check if files exist
+    std::ifstream testMeta(metaFilePath);
+    bool exists = testMeta.good();
+    testMeta.close();
+    
+    if (exists) {
+        loadMeta();
+        std::cout << "[DISK-BTREE] Loaded existing tree (" << totalRecords << " records)" << std::endl;
+    } else {
+        // Create new tree
+        DiskBTreeNode* root = new DiskBTreeNode(minDegree, true);
+        rootPosition = allocateNodePosition();
+        root->diskPosition = rootPosition;
+        saveNode(root);
+        deleteNode(root);
+        saveMeta();
+        std::cout << "[DISK-BTREE] Created new disk-based B-tree" << std::endl;
     }
 }
 
-BTreeNode* BTreeNode::search(long key) {
-    int i = findKey(key);
-    
-    if (i < keys.size() && keys[i] == key) {
-        return this;
-    }
-    
-    if (isLeaf) {
+DiskBTree::~DiskBTree() {
+    saveMeta();
+}
+
+void DiskBTree::saveMeta() {
+    std::ofstream meta(metaFilePath, std::ios::binary);
+    meta.write(reinterpret_cast<const char*>(&minDegree), sizeof(minDegree));
+    meta.write(reinterpret_cast<const char*>(&rootPosition), sizeof(rootPosition));
+    meta.write(reinterpret_cast<const char*>(&nextNodePosition), sizeof(nextNodePosition));
+    meta.write(reinterpret_cast<const char*>(&nextDataPosition), sizeof(nextDataPosition));
+    meta.write(reinterpret_cast<const char*>(&totalRecords), sizeof(totalRecords));
+    meta.close();
+}
+
+void DiskBTree::loadMeta() {
+    std::ifstream meta(metaFilePath, std::ios::binary);
+    meta.read(reinterpret_cast<char*>(&minDegree), sizeof(minDegree));
+    meta.read(reinterpret_cast<char*>(&rootPosition), sizeof(rootPosition));
+    meta.read(reinterpret_cast<char*>(&nextNodePosition), sizeof(nextNodePosition));
+    meta.read(reinterpret_cast<char*>(&nextDataPosition), sizeof(nextDataPosition));
+    meta.read(reinterpret_cast<char*>(&totalRecords), sizeof(totalRecords));
+    meta.close();
+}
+
+long DiskBTree::allocateNodePosition() {
+    long pos = nextNodePosition;
+    nextNodePosition += DiskBTreeNode::getDiskSize();
+    return pos;
+}
+
+long DiskBTree::allocateDataPosition() {
+    long pos = nextDataPosition;
+    nextDataPosition += VitalRecord::getDiskSize();
+    return pos;
+}
+
+DiskBTreeNode* DiskBTree::loadNode(long position) {
+    std::ifstream file(indexFilePath, std::ios::binary);
+    if (!file.is_open()) {
+        std::cerr << "Error opening index file for reading" << std::endl;
         return nullptr;
     }
     
-    return children[i]->search(key);
+    file.seekg(position);
+    DiskBTreeNode* node = new DiskBTreeNode(minDegree, true);
+    node->readFromDisk(file);
+    file.close();
+    
+    return node;
 }
 
-void BTreeNode::insertNonFull(long key, VitalRecord record) {
-    int i = keys.size() - 1;
+void DiskBTree::saveNode(DiskBTreeNode* node) {
+    std::ofstream file;
     
-    if (isLeaf) {
-        keys.push_back(0);
-        records.push_back(VitalRecord());
+    // Check if file exists
+    std::ifstream test(indexFilePath);
+    bool exists = test.good();
+    test.close();
+    
+    if (exists) {
+        file.open(indexFilePath, std::ios::binary | std::ios::in | std::ios::out);
+    } else {
+        file.open(indexFilePath, std::ios::binary);
+    }
+    
+    if (!file.is_open()) {
+        std::cerr << "Error opening index file for writing" << std::endl;
+        return;
+    }
+    
+    file.seekp(node->diskPosition);
+    node->writeToDisk(file);
+    file.close();
+}
+
+void DiskBTree::deleteNode(DiskBTreeNode* node) {
+    delete node;
+}
+
+VitalRecord DiskBTree::loadRecord(long position) {
+    std::ifstream file(dataFilePath, std::ios::binary);
+    file.seekg(position);
+    
+    VitalRecord record;
+    record.readFromDisk(file);
+    record.diskPosition = position;
+    
+    file.close();
+    return record;
+}
+
+long DiskBTree::saveRecord(const VitalRecord& record) {
+    long position = allocateDataPosition();
+    
+    std::ofstream file;
+    std::ifstream test(dataFilePath);
+    bool exists = test.good();
+    test.close();
+    
+    if (exists) {
+        file.open(dataFilePath, std::ios::binary | std::ios::in | std::ios::out);
+    } else {
+        file.open(dataFilePath, std::ios::binary);
+    }
+    
+    file.seekp(position);
+    record.writeToDisk(file);
+    file.close();
+    
+    return position;
+}
+
+void DiskBTree::insert(long timestamp, const VitalRecord& record) {
+    // Save record to data file
+    long dataPos = saveRecord(record);
+    
+    // Load root
+    DiskBTreeNode* root = loadNode(rootPosition);
+    
+    // If root is full, split
+    if (root->numKeys == 2 * minDegree - 1) {
+        DiskBTreeNode* newRoot = new DiskBTreeNode(minDegree, false);
+        newRoot->diskPosition = allocateNodePosition();
+        newRoot->childPositions[0] = rootPosition;
         
-        while (i >= 0 && keys[i] > key) {
-            keys[i + 1] = keys[i];
-            records[i + 1] = records[i];
+        splitChild(newRoot, 0);
+        
+        rootPosition = newRoot->diskPosition;
+        saveNode(newRoot);
+        
+        insertNonFull(newRoot, timestamp, dataPos);
+        deleteNode(newRoot);
+    } else {
+        insertNonFull(root, timestamp, dataPos);
+    }
+    
+    deleteNode(root);
+    
+    totalRecords++;
+    saveMeta();
+    
+    std::cout << "[DISK-BTREE] Inserted record (total: " << totalRecords << ")" << std::endl;
+}
+
+void DiskBTree::insertNonFull(DiskBTreeNode* node, long key, long dataPos) {
+    int i = node->numKeys - 1;
+    
+    if (node->isLeaf) {
+        // Shift keys to make room
+        while (i >= 0 && node->keys[i] > key) {
+            node->keys[i + 1] = node->keys[i];
+            node->dataPositions[i + 1] = node->dataPositions[i];
             i--;
         }
         
-        keys[i + 1] = key;
-        records[i + 1] = record;
-    }
-    else {
-        while (i >= 0 && keys[i] > key) {
+        node->keys[i + 1] = key;
+        node->dataPositions[i + 1] = dataPos;
+        node->numKeys++;
+        
+        saveNode(node);
+    } else {
+        // Find child
+        while (i >= 0 && node->keys[i] > key) {
             i--;
         }
         i++;
         
-        if (children[i]->keys.size() == 2 * minDegree - 1) {
-            splitChild(i, children[i]);
+        DiskBTreeNode* child = loadNode(node->childPositions[i]);
+        
+        if (child->numKeys == 2 * minDegree - 1) {
+            splitChild(node, i);
             
-            if (keys[i] < key) {
+            if (node->keys[i] < key) {
                 i++;
             }
+            
+            deleteNode(child);
+            child = loadNode(node->childPositions[i]);
         }
         
-        children[i]->insertNonFull(key, record);
+        insertNonFull(child, key, dataPos);
+        deleteNode(child);
     }
 }
 
-void BTreeNode::splitChild(int index, BTreeNode* child) {
-    BTreeNode* newNode = new BTreeNode(child->minDegree, child->isLeaf);
+void DiskBTree::splitChild(DiskBTreeNode* parent, int index) {
+    DiskBTreeNode* child = loadNode(parent->childPositions[index]);
+    DiskBTreeNode* newChild = new DiskBTreeNode(minDegree, child->isLeaf);
+    newChild->diskPosition = allocateNodePosition();
     
     int mid = minDegree - 1;
+    newChild->numKeys = minDegree - 1;
     
+    // Copy second half to new node
     for (int j = 0; j < minDegree - 1; j++) {
-        newNode->keys.push_back(child->keys[mid + 1 + j]);
-        newNode->records.push_back(child->records[mid + 1 + j]);
+        newChild->keys[j] = child->keys[mid + 1 + j];
+        newChild->dataPositions[j] = child->dataPositions[mid + 1 + j];
     }
     
     if (!child->isLeaf) {
         for (int j = 0; j < minDegree; j++) {
-            newNode->children.push_back(child->children[mid + 1 + j]);
+            newChild->childPositions[j] = child->childPositions[mid + 1 + j];
         }
     }
     
-    child->keys.resize(mid);
-    child->records.resize(mid);
-    if (!child->isLeaf) {
-        child->children.resize(mid + 1);
+    child->numKeys = mid;
+    
+    // Insert middle key into parent
+    for (int j = parent->numKeys; j > index; j--) {
+        parent->keys[j] = parent->keys[j - 1];
+        parent->dataPositions[j] = parent->dataPositions[j - 1];
+        parent->childPositions[j + 1] = parent->childPositions[j];
     }
     
-    children.insert(children.begin() + index + 1, newNode);
-    keys.insert(keys.begin() + index, child->keys[mid]);
-    records.insert(records.begin() + index, child->records[mid]);
+    parent->keys[index] = child->keys[mid];
+    parent->dataPositions[index] = child->dataPositions[mid];
+    parent->childPositions[index + 1] = newChild->diskPosition;
+    parent->numKeys++;
+    
+    saveNode(child);
+    saveNode(newChild);
+    saveNode(parent);
+    
+    deleteNode(child);
+    deleteNode(newChild);
 }
 
-void BTreeNode::rangeQuery(long startKey, long endKey, std::vector<VitalRecord>& results) {
-    int i = 0;
+VitalRecord* DiskBTree::search(long timestamp) {
+    DiskBTreeNode* root = loadNode(rootPosition);
+    DiskBTreeNode* result = searchNode(root, timestamp);
+    deleteNode(root);
     
-    while (i < keys.size() && keys[i] < startKey) {
-        i++;
-    }
-    
-    for (; i < keys.size(); i++) {
-        if (!isLeaf) {
-            children[i]->rangeQuery(startKey, endKey, results);
+    if (result) {
+        for (int i = 0; i < result->numKeys; i++) {
+            if (result->keys[i] == timestamp) {
+                VitalRecord* record = new VitalRecord();
+                *record = loadRecord(result->dataPositions[i]);
+                deleteNode(result);
+                return record;
+            }
         }
-        
-        if (keys[i] >= startKey && keys[i] <= endKey) {
-            results.push_back(records[i]);
-        }
-        
-        if (keys[i] > endKey) {
-            return;
-        }
-    }
-    
-    if (!isLeaf && i < children.size()) {
-        children[i]->rangeQuery(startKey, endKey, results);
-    }
-}
-
-// Write node to disk
-void BTreeNode::writeToDisk(std::ofstream& file) {
-    // Write node metadata
-    file.write(reinterpret_cast<const char*>(&isLeaf), sizeof(isLeaf));
-    file.write(reinterpret_cast<const char*>(&minDegree), sizeof(minDegree));
-    
-    // Write number of keys
-    int numKeys = keys.size();
-    file.write(reinterpret_cast<const char*>(&numKeys), sizeof(numKeys));
-    
-    // Write keys
-    for (int i = 0; i < numKeys; i++) {
-        file.write(reinterpret_cast<const char*>(&keys[i]), sizeof(long));
-    }
-    
-    // Write records
-    for (int i = 0; i < numKeys; i++) {
-        records[i].writeToDisk(file);
-    }
-    
-    // Write number of children
-    int numChildren = children.size();
-    file.write(reinterpret_cast<const char*>(&numChildren), sizeof(numChildren));
-}
-
-// Read node from disk
-void BTreeNode::readFromDisk(std::ifstream& file) {
-    // Read node metadata
-    file.read(reinterpret_cast<char*>(&isLeaf), sizeof(isLeaf));
-    file.read(reinterpret_cast<char*>(&minDegree), sizeof(minDegree));
-    
-    // Read number of keys
-    int numKeys;
-    file.read(reinterpret_cast<char*>(&numKeys), sizeof(numKeys));
-    
-    // Read keys
-    keys.clear();
-    for (int i = 0; i < numKeys; i++) {
-        long key;
-        file.read(reinterpret_cast<char*>(&key), sizeof(long));
-        keys.push_back(key);
-    }
-    
-    // Read records
-    records.clear();
-    for (int i = 0; i < numKeys; i++) {
-        VitalRecord record;
-        record.readFromDisk(file);
-        records.push_back(record);
-    }
-    
-    // Read number of children (we'll create children pointers later)
-    int numChildren;
-    file.read(reinterpret_cast<char*>(&numChildren), sizeof(numChildren));
-}
-
-// ==================== BTree Implementation ====================
-
-BTree::BTree(int degree, const std::string& filePath) {
-    minDegree = degree;
-    dataFilePath = filePath;
-    root = nullptr;
-    
-    // Try to load existing data from disk
-    loadFromDisk();
-}
-
-BTree::~BTree() {
-    saveToDisk();  // Save before destroying
-    deleteTree(root);
-}
-
-void BTree::deleteTree(BTreeNode* node) {
-    if (node == nullptr) return;
-    
-    if (!node->isLeaf) {
-        for (auto child : node->children) {
-            deleteTree(child);
-        }
-    }
-    
-    delete node;
-}
-
-void BTree::insert(long timestamp, VitalRecord record) {
-    if (root == nullptr) {
-        root = new BTreeNode(minDegree, true);
-        root->keys.push_back(timestamp);
-        root->records.push_back(record);
-        saveToDisk();  // Save after insert
-        return;
-    }
-    
-    if (root->keys.size() == 2 * minDegree - 1) {
-        BTreeNode* newRoot = new BTreeNode(minDegree, false);
-        newRoot->children.push_back(root);
-        newRoot->splitChild(0, root);
-        
-        int i = 0;
-        if (newRoot->keys[0] < timestamp) {
-            i++;
-        }
-        newRoot->children[i]->insertNonFull(timestamp, record);
-        
-        root = newRoot;
-    }
-    else {
-        root->insertNonFull(timestamp, record);
-    }
-    
-    saveToDisk();  // Save after every insert
-}
-
-VitalRecord* BTree::search(long timestamp) {
-    if (root == nullptr) {
-        return nullptr;
-    }
-    
-    BTreeNode* result = root->search(timestamp);
-    if (result == nullptr) {
-        return nullptr;
-    }
-    
-    for (int i = 0; i < result->keys.size(); i++) {
-        if (result->keys[i] == timestamp) {
-            return &(result->records[i]);
-        }
+        deleteNode(result);
     }
     
     return nullptr;
 }
 
-void BTree::traverse() {
-    if (root != nullptr) {
-        root->traverse();
+DiskBTreeNode* DiskBTree::searchNode(DiskBTreeNode* node, long key) {
+    int i = 0;
+    while (i < node->numKeys && key > node->keys[i]) {
+        i++;
     }
+    
+    if (i < node->numKeys && key == node->keys[i]) {
+        return node;
+    }
+    
+    if (node->isLeaf) {
+        return nullptr;
+    }
+    
+    DiskBTreeNode* child = loadNode(node->childPositions[i]);
+    DiskBTreeNode* result = searchNode(child, key);
+    
+    if (result != child) {
+        deleteNode(child);
+    }
+    
+    return result;
 }
 
-std::vector<VitalRecord> BTree::rangeQuery(long startTime, long endTime) {
+std::vector<VitalRecord> DiskBTree::rangeQuery(long startTime, long endTime) {
     std::vector<VitalRecord> results;
-    
-    if (root == nullptr) {
-        return results;
-    }
-    
-    root->rangeQuery(startTime, endTime, results);
+    DiskBTreeNode* root = loadNode(rootPosition);
+    rangeQueryHelper(root, startTime, endTime, results);
+    deleteNode(root);
     return results;
 }
 
-// Save entire tree to disk
-void BTree::saveToDisk() {
-    std::ofstream file(dataFilePath, std::ios::binary);
+void DiskBTree::rangeQueryHelper(DiskBTreeNode* node, long startKey, long endKey, 
+                                  std::vector<VitalRecord>& results) {
+    int i = 0;
     
-    if (!file.is_open()) {
-        std::cerr << "Error: Cannot open file for writing: " << dataFilePath << std::endl;
-        return;
+    while (i < node->numKeys && node->keys[i] < startKey) {
+        i++;
     }
     
-    // Write tree metadata
-    file.write(reinterpret_cast<const char*>(&minDegree), sizeof(minDegree));
-    
-    // Write if root exists
-    bool hasRoot = (root != nullptr);
-    file.write(reinterpret_cast<const char*>(&hasRoot), sizeof(hasRoot));
-    
-    if (hasRoot) {
-        saveNode(root, file);
-    }
-    
-    file.close();
-    std::cout << "[DISK] Tree saved to " << dataFilePath << std::endl;
-}
-
-// Recursive function to save nodes
-void BTree::saveNode(BTreeNode* node, std::ofstream& file) {
-    if (node == nullptr) return;
-    
-    // Write current node
-    node->writeToDisk(file);
-    
-    // Recursively write children
-    if (!node->isLeaf) {
-        for (auto child : node->children) {
-            saveNode(child, file);
+    for (; i < node->numKeys; i++) {
+        if (!node->isLeaf) {
+            DiskBTreeNode* child = loadNode(node->childPositions[i]);
+            rangeQueryHelper(child, startKey, endKey, results);
+            deleteNode(child);
         }
-    }
-}
-
-// Load tree from disk
-void BTree::loadFromDisk() {
-    std::ifstream file(dataFilePath, std::ios::binary);
-    
-    if (!file.is_open()) {
-        std::cout << "[DISK] No existing data file found. Starting fresh." << std::endl;
-        return;
-    }
-    
-    // Read tree metadata
-    file.read(reinterpret_cast<char*>(&minDegree), sizeof(minDegree));
-    
-    // Read if root exists
-    bool hasRoot;
-    file.read(reinterpret_cast<char*>(&hasRoot), sizeof(hasRoot));
-    
-    if (hasRoot) {
-        root = loadNode(file);
-        std::cout << "[DISK] Tree loaded from " << dataFilePath << std::endl;
-    }
-    
-    file.close();
-}
-
-// Recursive function to load nodes
-BTreeNode* BTree::loadNode(std::ifstream& file) {
-    BTreeNode* node = new BTreeNode(minDegree, true);
-    node->readFromDisk(file);
-    
-    // If node has children, load them recursively
-    if (!node->isLeaf) {
-        int numChildren = node->children.size(); // This was stored during write
-        node->children.clear();
         
-        // We need to track how many children to load
-        // Get it from the file (we stored numChildren during write)
-        file.seekg(-sizeof(int), std::ios::cur); // Go back to read numChildren again
-        int childCount;
-        file.read(reinterpret_cast<char*>(&childCount), sizeof(childCount));
+        if (node->keys[i] >= startKey && node->keys[i] <= endKey) {
+            results.push_back(loadRecord(node->dataPositions[i]));
+        }
         
-        for (int i = 0; i < childCount; i++) {
-            BTreeNode* child = loadNode(file);
-            node->children.push_back(child);
+        if (node->keys[i] > endKey) {
+            return;
         }
     }
     
-    return node;
+    if (!node->isLeaf) {
+        DiskBTreeNode* child = loadNode(node->childPositions[i]);
+        rangeQueryHelper(child, startKey, endKey, results);
+        deleteNode(child);
+    }
 }

@@ -5,6 +5,7 @@
 #include <ctime>
 #include <fstream>
 
+// Fixed-size record for disk storage (no dynamic allocation)
 struct VitalRecord {
     int patientID;
     long timestamp;
@@ -14,18 +15,20 @@ struct VitalRecord {
     int spo2;
     float temperature;
     
-    VitalRecord() : patientID(0), timestamp(0), heart_rate(0), 
-                    systolic_bp(0), diastolic_bp(0), spo2(0), temperature(0.0) {}
+    // Position in data file (-1 if not saved)
+    long diskPosition;
     
-    VitalRecord(int pid, long ts, int hr, int sbp, int dbp, int sp, float temp)
-        : patientID(pid), timestamp(ts), heart_rate(hr), 
-          systolic_bp(sbp), diastolic_bp(dbp), spo2(sp), temperature(temp) {}
+    VitalRecord();
+    VitalRecord(int pid, long ts, int hr, int sbp, int dbp, int sp, float temp);
     
     void display() const;
     
-    // Disk I/O methods
+    // Fixed-size disk I/O
     void writeToDisk(std::ofstream& file) const;
     void readFromDisk(std::ifstream& file);
+    
+    // Get fixed size for disk storage
+    static size_t getDiskSize();
 };
 
 #endif
