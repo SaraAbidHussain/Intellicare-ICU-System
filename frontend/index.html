@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>IntelliCare ICU - Dashboard</title>
+    <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+    <!-- Header -->
+    <header class="header">
+        <div class="container">
+            <h1>🏥 IntelliCare ICU Dashboard</h1>
+            <div class="server-status" id="serverStatus">
+                <span class="status-indicator"></span>
+                <span class="status-text">Connecting...</span>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Container -->
+    <div class="container main-content">
+        
+        <!-- Alert Panel (Top Priority) -->
+        <section class="alerts-panel" id="alertsPanel">
+            <h2>🚨 Critical Alerts</h2>
+            <div id="alertsList" class="alerts-list">
+                <p class="loading">Loading alerts...</p>
+            </div>
+        </section>
+
+        <!-- Patients Overview -->
+        <section class="patients-section">
+            <div class="section-header">
+                <h2>👥 Patients</h2>
+                <button class="btn btn-primary" onclick="showAddPatientModal()">+ Add Patient</button>
+            </div>
+            <div id="patientsList" class="patients-grid">
+                <p class="loading">Loading patients...</p>
+            </div>
+        </section>
+
+        <!-- Patient Details Modal (Hidden by default) -->
+        <div id="patientModal" class="modal">
+            <div class="modal-content">
+                <span class="close" onclick="closePatientModal()">&times;</span>
+                <div id="patientDetails"></div>
+            </div>
+        </div>
+
+        <!-- Add Patient Modal -->
+        <div id="addPatientModal" class="modal">
+            <div class="modal-content">
+                <span class="close" onclick="closeAddPatientModal()">&times;</span>
+                <h2>Add New Patient</h2>
+                <form id="addPatientForm" onsubmit="handleAddPatient(event)">
+                    <div class="form-group">
+                        <label>Patient ID:</label>
+                        <input type="number" name="patientID" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Name:</label>
+                        <input type="text" name="name" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Age:</label>
+                        <input type="number" name="age" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Gender:</label>
+                        <select name="gender" required>
+                            <option value="M">Male</option>
+                            <option value="F">Female</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Ward:</label>
+                        <input type="text" name="ward" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Condition:</label>
+                        <input type="text" name="condition" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Admission Date:</label>
+                        <input type="date" name="admissionDate" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Blood Type:</label>
+                        <input type="text" name="bloodType">
+                    </div>
+                    <button type="submit" class="btn btn-primary">Add Patient</button>
+                </form>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <p>&copy; 2024 IntelliCare ICU System | Phase 3: Frontend Dashboard</p>
+    </footer>
+
+    <!-- Scripts -->
+    <script src="js/config.js"></script>
+    <script src="js/api.js"></script>
+    <script src="js/app.js"></script>
+</body>
+</html>
