@@ -59,6 +59,7 @@ private:
     
     VitalRecord loadRecord(long position);
     long saveRecord(const VitalRecord& record);
+    long searchHelper(DiskBTreeNode* node, long key);
     
 public:
     DiskBTree(int degree, const std::string& basePath);

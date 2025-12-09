@@ -13,7 +13,7 @@ using namespace httplib;
 using json = nlohmann::json;
 
 // Global data structures
-BTree* vitalSignsDB;
+DiskBTree* vitalSignsDB;
 HashTable<int, Patient>* patientDB;
 PriorityQueue* alertQueue;
 
@@ -68,7 +68,7 @@ void enableCORS(Response& res) {
 }
 
 int main() {
-    vitalSignsDB = new BTree(50, "vitals.bin");
+    vitalSignsDB = new DiskBTree(50, "vitals");
     patientDB = new HashTable<int, Patient>(101, "patients.bin");
     alertQueue = new PriorityQueue("alerts.bin");
     

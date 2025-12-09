@@ -1,4 +1,4 @@
-#include "btree_disk.h"
+#include "btree.h"
 #include <iostream>
 #include <cstring>
 
@@ -293,22 +293,36 @@ void DiskBTree::splitChild(DiskBTreeNode* parent, int index) {
     deleteNode(child);
     deleteNode(newChild);
 }
-
+long DiskBTree::searchHelper(DiskBTreeNode* node, long key) {
+    int i = 0;
+    
+    while (i < node->numKeys && key > node->keys[i]) {
+        i++;
+    }
+    
+    if (i < node->numKeys && key == node->keys[i]) {
+        return node->dataPositions[i];
+    }
+    
+    if (node->isLeaf) {
+        return -1;
+    }
+    
+    DiskBTreeNode* child = loadNode(node->childPositions[i]);
+    long result = searchHelper(child, key);
+    deleteNode(child);
+    
+    return result;
+}
 VitalRecord* DiskBTree::search(long timestamp) {
     DiskBTreeNode* root = loadNode(rootPosition);
-    DiskBTreeNode* result = searchNode(root, timestamp);
+    long dataPos = searchHelper(root, timestamp);
     deleteNode(root);
     
-    if (result) {
-        for (int i = 0; i < result->numKeys; i++) {
-            if (result->keys[i] == timestamp) {
-                VitalRecord* record = new VitalRecord();
-                *record = loadRecord(result->dataPositions[i]);
-                deleteNode(result);
-                return record;
-            }
-        }
-        deleteNode(result);
+    if (dataPos != -1) {
+        VitalRecord* record = new VitalRecord();
+        *record = loadRecord(dataPos);
+        return record;
     }
     
     return nullptr;
@@ -346,6 +360,7 @@ std::vector<VitalRecord> DiskBTree::rangeQuery(long startTime, long endTime) {
     return results;
 }
 
+
 void DiskBTree::rangeQueryHelper(DiskBTreeNode* node, long startKey, long endKey, 
                                   std::vector<VitalRecord>& results) {
     int i = 0;
@@ -361,12 +376,12 @@ void DiskBTree::rangeQueryHelper(DiskBTreeNode* node, long startKey, long endKey
             deleteNode(child);
         }
         
-        if (node->keys[i] >= startKey && node->keys[i] <= endKey) {
-            results.push_back(loadRecord(node->dataPositions[i]));
-        }
-        
         if (node->keys[i] > endKey) {
             return;
+        }
+        
+        if (node->keys[i] >= startKey && node->keys[i] <= endKey) {
+            results.push_back(loadRecord(node->dataPositions[i]));
         }
     }
     
