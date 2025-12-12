@@ -1,0 +1,11 @@
+# Build/compiled files
+*.o
+server
+test_*
+*.bin
+*.dat
+
+# Dependencies
+include/nlohmann/
+httplib.h
+json.hpp.2
