@@ -124,7 +124,6 @@ void PriorityQueue::display() const {
 
 // Display heap structure (for debugging)
 void PriorityQueue::displayTree() const {
-    std::cout << "\n========== Heap Structure ==========" << std::endl;
     
     if (isEmpty()) {
         std::cout << "Empty heap" << std::endl;
@@ -151,7 +150,6 @@ void PriorityQueue::displayTree() const {
         }
     }
     
-    std::cout << "====================================\n" << std::endl;
 }
 
 // Get all alerts of specific priority

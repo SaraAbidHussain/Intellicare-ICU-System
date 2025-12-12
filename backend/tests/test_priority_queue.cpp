@@ -91,7 +91,7 @@ void test3_RealTimeProcessing() {
     this_thread::sleep_for(chrono::milliseconds(500));
     
     pq.insert(Alert(3, 103, CRITICAL, VITAL_ABNORMAL, "Cardiac arrest!"));
-    cout << "Time: 10:07 - 🚨 CRITICAL ALERT!" << endl;
+    cout << "Time: 10:07 -  CRITICAL ALERT!" << endl;
     this_thread::sleep_for(chrono::milliseconds(500));
     
     pq.insert(Alert(4, 104, HIGH, DETERIORATION, "Rapid breathing"));
@@ -107,7 +107,7 @@ void test3_RealTimeProcessing() {
         this_thread::sleep_for(chrono::milliseconds(300));
     }
     
-    cout << "\n✅ Test 3 Passed!" << endl;
+    cout << "\n Test 3 Passed!" << endl;
 }
 
 // Test 4: Filter and Query
@@ -135,11 +135,11 @@ void test4_FilterQuery() {
     }
     
     // Query unacknowledged
-    cout << "\n\n⚠️  Unacknowledged alerts:" << endl;
+    cout << "\n\n  Unacknowledged alerts:" << endl;
     auto unacked = pq.getUnacknowledgedAlerts();
     cout << "Found " << unacked.size() << " unacknowledged alerts" << endl;
     
-    cout << "\n✅ Test 4 Passed!" << endl;
+    cout << "\nTest 4 Passed!" << endl;
 }
 
 // Test 5: Large Scale Performance
@@ -175,7 +175,7 @@ void test5_Performance() {
         Alert alert = pq.extractMin();
         if (alert.priority < prevPriority) {
             ordered = false;
-            cout << "❌ Order violation detected!" << endl;
+            cout << " Order violation detected!" << endl;
         }
         prevPriority = alert.priority;
     }
@@ -186,10 +186,10 @@ void test5_Performance() {
     cout << "Extraction time: " << duration.count() << " ms" << endl;
     
     if (ordered) {
-        cout << "✅ All alerts extracted in correct priority order!" << endl;
+        cout << " All alerts extracted in correct priority order!" << endl;
     }
     
-    cout << "\n✅ Test 5 Passed!" << endl;
+    cout << "\n Test 5 Passed!" << endl;
 }
 
 // Test 6: Heap Property Verification
@@ -220,16 +220,16 @@ void test6_HeapProperty() {
         
         if (alert.priority < lastPriority) {
             isMinHeap = false;
-            cout << "❌ Min-heap property violated!" << endl;
+            cout << " Min-heap property violated!" << endl;
         }
         lastPriority = alert.priority;
     }
     
     if (isMinHeap) {
-        cout << "\n✅ Min-heap property maintained correctly!" << endl;
+        cout << "\n Min-heap property maintained correctly!" << endl;
     }
     
-    cout << "\n✅ Test 6 Passed!" << endl;
+    cout << "\n Test 6 Passed!" << endl;
 }
 
 int main() {
@@ -246,7 +246,7 @@ int main() {
     test6_HeapProperty();
     
     cout << "\n\n╔══════════════════════════════════════════════════════╗" << endl;
-    cout << "║   ✅ ALL TESTS PASSED SUCCESSFULLY!                 ║" << endl;
+    cout << "║    ALL TESTS PASSED SUCCESSFULLY!                 ║" << endl;
     cout << "║                                                      ║" << endl;
     cout << "║   Priority Queue Features:                          ║" << endl;
     cout << "║   ✓ O(log n) insertion                              ║" << endl;

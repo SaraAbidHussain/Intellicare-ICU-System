@@ -15,7 +15,7 @@ Alert::Alert(int id, int pid, AlertPriority prio, AlertType t, const std::string
 
 std::string Alert::getPriorityString() const {
     switch(priority) {
-        case CRITICAL: return "🔴 CRITICAL";
+        case CRITICAL: return "🔴 CRITICAL"; 
         case HIGH:     return "🟠 HIGH";
         case MEDIUM:   return "🟡 MEDIUM";
         case LOW:      return "🟢 LOW";

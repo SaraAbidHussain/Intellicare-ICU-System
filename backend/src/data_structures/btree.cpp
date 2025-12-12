@@ -69,6 +69,8 @@ DiskBTree::DiskBTree(int degree, const std::string& basePath)
 
 DiskBTree::~DiskBTree() {
     saveMeta();
+    //Ensures that when the B-tree object is destroyed, 
+    // the latest metadata (root position, next offsets, total records) is written to disk.
 }
 
 void DiskBTree::saveMeta() {

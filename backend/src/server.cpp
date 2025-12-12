@@ -5,6 +5,7 @@
 #include "data_structures/btree.h"
 #include "data_structures/priority_queue.h"
 #include "data_structures/hash_table.h"
+#include "data_structures/drug_graph.h"
 #include "models/vital_record.h"
 #include "models/patient.h"
 #include "models/alert.h"
@@ -16,6 +17,7 @@ using json = nlohmann::json;
 DiskBTree* vitalSignsDB;
 HashTable<int, Patient>* patientDB;
 PriorityQueue* alertQueue;
+DrugGraph* drugInteractionGraph;
 
 // Convert VitalRecord to JSON
 json vitalToJson(const VitalRecord& v) {
@@ -71,6 +73,8 @@ int main() {
     vitalSignsDB = new DiskBTree(50, "vitals");
     patientDB = new HashTable<int, Patient>(101, "patients.bin");
     alertQueue = new PriorityQueue("alerts.bin");
+    drugInteractionGraph = new DrugGraph("drug_interactions.bin");
+    drugInteractionGraph->loadCommonInteractions();
     
     Server svr;
     
@@ -263,6 +267,65 @@ int main() {
             res.set_content(error.dump(), "application/json");
         }
     });
+
+    // POST /api/drug-check
+    svr.Post("/api/drug-check", [](const Request& req, Response& res) {
+    enableCORS(res);
+    try {
+        auto jsonData = json::parse(req.body);
+        std::vector<std::string> medications;
+        
+        for (const auto& med : jsonData["medications"]) {
+            medications.push_back(med.get<std::string>());
+        }
+        
+        auto report = drugInteractionGraph->checkDrugCombination(medications);
+        
+        json interactions = json::array();
+        for (const auto& interaction : report.allInteractions) {
+            interactions.push_back({
+                {"drug1", interaction.drug1},
+                {"drug2", interaction.drug2},
+                {"severity", interaction.severity},
+                {"severityString", interaction.getSeverityString()},
+                {"description", interaction.description}
+            });
+        }
+        
+        json response = {
+            {"status", "success"},
+            {"isSafe", report.isSafe},
+            {"totalInteractions", report.totalInteractions},
+            {"maxSeverity", report.maxSeverity},
+            {"interactions", interactions},
+            {"criticalPairs", report.criticalPairs}
+        };
+        
+        res.set_content(response.dump(), "application/json");
+    } catch (const std::exception& e) {
+        json error = {{"status", "error"}, {"message", e.what()}};
+        res.status = 400;
+        res.set_content(error.dump(), "application/json");
+    }
+});
+
+    // GET /api/drugs
+    svr.Get("/api/drugs", [](const Request& req, Response& res) {
+    enableCORS(res);
+    try {
+        auto drugs = drugInteractionGraph->getAllDrugs();
+        json response = {
+            {"status", "success"},
+            {"count", drugs.size()},
+            {"drugs", drugs}
+        };
+        res.set_content(response.dump(), "application/json");
+    } catch (const std::exception& e) {
+        json error = {{"status", "error"}, {"message", e.what()}};
+        res.status = 500;
+        res.set_content(error.dump(), "application/json");
+    }
+    });
     
     // OPTIONS for CORS
     svr.Options(R"(.*)", [](const Request& req, Response& res) {
@@ -290,6 +353,7 @@ int main() {
     delete vitalSignsDB;
     delete patientDB;
     delete alertQueue;
+    delete drugInteractionGraph;
     
     return 0;
 }
