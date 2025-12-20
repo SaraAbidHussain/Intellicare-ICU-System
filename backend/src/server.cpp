@@ -6,6 +6,8 @@
 #include "data_structures/priority_queue.h"
 #include "data_structures/hash_table.h"
 #include "data_structures/drug_graph.h"
+#include "data_structures/sliding_window.h"
+#include "data_structures/kdtree.h"
 #include "models/vital_record.h"
 #include "models/patient.h"
 #include "models/alert.h"
@@ -18,6 +20,8 @@ DiskBTree* vitalSignsDB;
 HashTable<int, Patient>* patientDB;
 PriorityQueue* alertQueue;
 DrugGraph* drugInteractionGraph;
+KDTree* patientClusteringTree;
+SlidingWindow* continuousMonitoring;
 
 // Convert VitalRecord to JSON
 json vitalToJson(const VitalRecord& v) {
@@ -75,6 +79,8 @@ int main() {
     alertQueue = new PriorityQueue("alerts.bin");
     drugInteractionGraph = new DrugGraph("drug_interactions.bin");
     drugInteractionGraph->loadCommonInteractions();
+    patientClusteringTree = new KDTree(5, "patient_clustering.bin");
+    continuousMonitoring = new SlidingWindow(100, "sliding_windows.bin");
     
     Server svr;
     
@@ -332,6 +338,206 @@ int main() {
         enableCORS(res);
         res.status = 204;
     });
+
+    svr.Post("/api/vitals", [](const Request& req, Response& res) {
+    enableCORS(res);
+    try {
+        auto jsonData = json::parse(req.body);
+        VitalRecord record;
+        record.patientID = jsonData["patientID"];
+        record.timestamp = jsonData["timestamp"];
+        record.heart_rate = jsonData["heart_rate"];
+        record.systolic_bp = jsonData["systolic_bp"];
+        record.diastolic_bp = jsonData["diastolic_bp"];
+        record.spo2 = jsonData["spo2"];
+        record.temperature = jsonData["temperature"];
+        
+        // Store in B-tree
+        vitalSignsDB->insert(record.timestamp, record);
+        
+        // ADD TO SLIDING WINDOW
+        continuousMonitoring->addReading(record.patientID, record);
+        
+        // ADD TO KD-TREE for clustering
+        patientClusteringTree->insert(record);
+        
+        json response = {{"status", "success"}, {"message", "Vitals recorded"}};
+        res.set_content(response.dump(), "application/json");
+    } catch (const std::exception& e) {
+        json error = {{"status", "error"}, {"message", e.what()}};
+        res.status = 400;
+        res.set_content(error.dump(), "application/json");
+    }
+});
+
+    // GET /api/vitals/:id/recent?count=N
+    svr.Get(R"(/api/vitals/(\d+)/recent)", [](const Request& req, Response& res) {
+        enableCORS(res);
+        try {
+            int patientID = std::stoi(req.matches[1]);
+            int count = 10;  // Default
+            
+            if (req.has_param("count")) {
+                count = std::stoi(req.get_param_value("count"));
+            }
+            
+            auto readings = continuousMonitoring->getLastReadings(patientID, count);
+            json results = json::array();
+            
+            for (const auto& reading : readings) {
+                results.push_back(vitalToJson(reading));
+            }
+            
+            json response = {
+                {"status", "success"},
+                {"patientID", patientID},
+                {"count", results.size()},
+                {"readings", results}
+            };
+            res.set_content(response.dump(), "application/json");
+        } catch (const std::exception& e) {
+            json error = {{"status", "error"}, {"message", e.what()}};
+            res.status = 400;
+            res.set_content(error.dump(), "application/json");
+        }
+    });
+
+    // GET /api/vitals/:id/stats
+    svr.Get(R"(/api/vitals/(\d+)/stats)", [](const Request& req, Response& res) {
+        enableCORS(res);
+        try {
+            int patientID = std::stoi(req.matches[1]);
+            
+            auto stats = continuousMonitoring->getStatistics(patientID);
+            
+            json response = {
+                {"status", "success"},
+                {"patientID", patientID},
+                {"readingCount", stats.readingCount},
+                {"averages", {
+                    {"heartRate", stats.avgHeartRate},
+                    {"systolicBP", stats.avgSystolicBP},
+                    {"diastolicBP", stats.avgDiastolicBP},
+                    {"spo2", stats.avgSpO2},
+                    {"temperature", stats.avgTemperature}
+                }},
+                {"ranges", {
+                    {"heartRate", {
+                        {"min", stats.minHeartRate},
+                        {"max", stats.maxHeartRate}
+                    }},
+                    {"systolicBP", {
+                        {"min", stats.minSystolicBP},
+                        {"max", stats.maxSystolicBP}
+                    }}
+                }}
+            };
+            res.set_content(response.dump(), "application/json");
+        } catch (const std::exception& e) {
+            json error = {{"status", "error"}, {"message", e.what()}};
+            res.status = 400;
+            res.set_content(error.dump(), "application/json");
+        }
+    });
+
+    // GET /api/patients/:id/similar?k=N
+    svr.Get(R"(/api/patients/(\d+)/similar)", [](const Request& req, Response& res) {
+        enableCORS(res);
+        try {
+            int patientID = std::stoi(req.matches[1]);
+            int k = 5;  // Default: find 5 similar patients
+            
+            if (req.has_param("k")) {
+                k = std::stoi(req.get_param_value("k"));
+            }
+            
+            // Get recent vitals for this patient
+            auto recentReadings = continuousMonitoring->getLastReadings(patientID, 1);
+            
+            if (recentReadings.empty()) {
+                json error = {{"status", "error"}, {"message", "No vitals found for patient"}};
+                res.status = 404;
+                res.set_content(error.dump(), "application/json");
+                return;
+            }
+            
+            auto similarPatients = patientClusteringTree->findSimilarPatients(recentReadings[0], k);
+            
+            json results = json::array();
+            for (const auto& sp : similarPatients) {
+                if (sp.patientID != patientID) {  // Exclude the query patient
+                    results.push_back({
+                        {"patientID", sp.patientID},
+                        {"similarity", sp.similarity},
+                        {"vitals", {
+                            {"heartRate", (int)sp.vitals.coordinates[0]},
+                            {"systolicBP", (int)sp.vitals.coordinates[1]},
+                            {"diastolicBP", (int)sp.vitals.coordinates[2]},
+                            {"spo2", (int)sp.vitals.coordinates[3]},
+                            {"temperature", sp.vitals.coordinates[4]}
+                        }}
+                    });
+                }
+            }
+            
+            json response = {
+                {"status", "success"},
+                {"patientID", patientID},
+                {"similarCount", results.size()},
+                {"similarPatients", results}
+            };
+            res.set_content(response.dump(), "application/json");
+        } catch (const std::exception& e) {
+            json error = {{"status", "error"}, {"message", e.what()}};
+            res.status = 400;
+            res.set_content(error.dump(), "application/json");
+        }
+    });
+
+    // GET /api/monitoring/windows
+    svr.Get("/api/monitoring/windows", [](const Request& req, Response& res) {
+        enableCORS(res);
+        try {
+            auto patientIDs = continuousMonitoring->getAllPatientIDs();
+            
+            json windows = json::array();
+            for (int pid : patientIDs) {
+                auto readings = continuousMonitoring->getAllReadings(pid);
+                windows.push_back({
+                    {"patientID", pid},
+                    {"readingCount", readings.size()}
+                });
+            }
+            
+            json response = {
+                {"status", "success"},
+                {"monitoredPatients", patientIDs.size()},
+                {"windows", windows}
+            };
+            res.set_content(response.dump(), "application/json");
+        } catch (const std::exception& e) {
+            json error = {{"status", "error"}, {"message", e.what()}};
+            res.status = 500;
+            res.set_content(error.dump(), "application/json");
+        }
+    });
+
+    // GET /api/clustering/stats
+    svr.Get("/api/clustering/stats", [](const Request& req, Response& res) {
+        enableCORS(res);
+        try {
+            json response = {
+                {"status", "success"},
+                {"totalPoints", patientClusteringTree->size()},
+                {"dimensions", patientClusteringTree->getDimensions()}
+            };
+            res.set_content(response.dump(), "application/json");
+        } catch (const std::exception& e) {
+            json error = {{"status", "error"}, {"message", e.what()}};
+            res.status = 500;
+            res.set_content(error.dump(), "application/json");
+        }
+    });
     
     std::string host = "0.0.0.0";
     int port = 8080;
@@ -354,6 +560,8 @@ int main() {
     delete patientDB;
     delete alertQueue;
     delete drugInteractionGraph;
+    delete patientClusteringTree;
+    delete continuousMonitoring;
     
     return 0;
 }

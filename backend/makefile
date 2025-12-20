@@ -18,6 +18,9 @@ TARGET_BTREE := test_btree
 TARGET_HASHTABLE := test_hashtable
 TARGET_PRIORITY_QUEUE := test_priority_queue
 TARGET_DRUG_GRAPH := test_drug_graph
+TARGET_KDTREE := test_kdtree
+TARGET_SLIDING_WINDOW := test_sliding_window
+TARGET_CIRCULAR_BUFFER := test_circular_buffer
 TARGET_SERVER := server
 
 # Source files for B-tree
@@ -44,27 +47,49 @@ SOURCES_DRUG_GRAPH := \
 	$(DATA_STRUCT_DIR)/drug_graph.cpp \
 	$(TESTS_DIR)/test_drug_graph.cpp	
 
+# Source files for KD-Tree
+SOURCES_KDTREE := \
+	$(DATA_STRUCT_DIR)/kdtree.cpp \
+	$(MODELS_DIR)/vital_record.cpp \
+	$(TESTS_DIR)/test_kdtree.cpp	
+# Source files for Sliding Window
+SOURCES_SLIDING_WINDOW := \
+	$(DATA_STRUCT_DIR)/sliding_window.cpp \
+	$(MODELS_DIR)/vital_record.cpp \
+	$(TESTS_DIR)/test_sliding_window.cpp
+# Source files for Circular Buffer
+SOURCES_CIRCULAR_BUFFER := \
+	$(MODELS_DIR)/vital_record.cpp \
+	$(TESTS_DIR)/test_circular_buffer.cpp
 # Source files for Server
 SOURCES_SERVER := \
 	$(SRC_DIR)/server.cpp \
 	$(DATA_STRUCT_DIR)/btree.cpp \
 	$(DATA_STRUCT_DIR)/priority_queue.cpp \
+	$(DATA_STRUCT_DIR)/hash_table.cpp \
+	$(DATA_STRUCT_DIR)/kdtree.cpp \
+	$(DATA_STRUCT_DIR)/sliding_window.cpp \
+	$(DATA_STRUCT_DIR)/circular_buffer.cpp \
 	$(MODELS_DIR)/vital_record.cpp \
 	$(MODELS_DIR)/patient.cpp \
 	$(MODELS_DIR)/medication.cpp \
 	$(MODELS_DIR)/alert.cpp \
 	$(DATA_STRUCT_DIR)/drug_graph.cpp
+	
 
 # Object files
 OBJECTS_BTREE := $(SOURCES_BTREE:.cpp=.o)
 OBJECTS_HASHTABLE := $(SOURCES_HASHTABLE:.cpp=.o)
 OBJECTS_PRIORITY_QUEUE := $(SOURCES_PRIORITY_QUEUE:.cpp=.o)
-OBJECTDS_DRUG_GRAPH := $(SOURCES_DRUG_GRAPH:.cpp=.o)
+OBJECTS_DRUG_GRAPH := $(SOURCES_DRUG_GRAPH:.cpp=.o)
+OBJECTS_KDTREE := $(SOURCES_KDTREE:.cpp=.o)
+OBJECTS_SLIDING_WINDOW := $(SOURCES_SLIDING_WINDOW:.cpp=.o)
+OBJECTS_CIRCULAR_BUFFER := $(SOURCES_CIRCULAR_BUFFER:.cpp=.o)
 OBJECTS_SERVER := $(SOURCES_SERVER:.cpp=.o)
 
 # Default target
 .PHONY: all
-all: $(TARGET_BTREE) $(TARGET_HASHTABLE) $(TARGET_PRIORITY_QUEUE) $(TARGET_SERVER) $(TARGET_DRUG_GRAPH)
+all: $(TARGET_BTREE) $(TARGET_HASHTABLE) $(TARGET_PRIORITY_QUEUE) $(TARGET_SERVER) $(TARGET_DRUG_GRAPH) $(TARGET_KDTREE) $(TARGET_SLIDING_WINDOW) $(TARGET_CIRCULAR_BUFFER)
 
 # Build B-tree test
 $(TARGET_BTREE): $(OBJECTS_BTREE)
@@ -82,9 +107,24 @@ $(TARGET_PRIORITY_QUEUE): $(OBJECTS_PRIORITY_QUEUE)
 	@echo "✅ Priority Queue test compiled successfully!"
 
 # Build Drug Graph test
-$(TARGET_DRUG_GRAPH): $(OBJECTDS_DRUG_GRAPH)
+$(TARGET_DRUG_GRAPH): $(OBJECTS_DRUG_GRAPH)
 	$(CXX) $(LDFLAGS) -o $@ $^
 	@echo "✅ Drug Graph test compiled successfully!"
+
+# Build KD-Tree test
+$(TARGET_KDTREE): $(OBJECTS_KDTREE)
+	$(CXX) $(LDFLAGS) -o $@ $^
+	@echo "✅ KD-Tree test compiled successfully!"
+
+# Build Sliding Window test
+$(TARGET_SLIDING_WINDOW): $(OBJECTS_SLIDING_WINDOW)
+	$(CXX) $(LDFLAGS) -o $@ $^
+	@echo "✅ Sliding Window test compiled successfully!"
+
+# Build Circular Buffer test
+$(TARGET_CIRCULAR_BUFFER): $(OBJECTS_CIRCULAR_BUFFER)
+	$(CXX) $(LDFLAGS) -o $@ $^
+	@echo "✅ Circular Buffer test compiled successfully!"
 
 # Build Server
 $(TARGET_SERVER): $(OBJECTS_SERVER)
@@ -96,6 +136,10 @@ $(TARGET_SERVER): $(OBJECTS_SERVER)
 btree: $(TARGET_BTREE)
 hashtable: $(TARGET_HASHTABLE)
 priority_queue: $(TARGET_PRIORITY_QUEUE)
+drug_graph: $(TARGET_DRUG_GRAPH)
+kdtree: $(TARGET_KDTREE)
+sliding_window: $(TARGET_SLIDING_WINDOW)
+circular_buffer: $(TARGET_CIRCULAR_BUFFER)
 server: $(TARGET_SERVER)
 
 # Compile .cpp → .o
@@ -120,19 +164,31 @@ run-drug-graph: $(TARGET_DRUG_GRAPH)
 	@echo "Running Drug Graph tests..."
 	./$(TARGET_DRUG_GRAPH)
 
+run-kdtree: $(TARGET_KDTREE)
+	@echo "Running KD-Tree tests..."
+	./$(TARGET_KDTREE)
+
+run-sliding-window: $(TARGET_SLIDING_WINDOW)
+	@echo "Running Sliding Window tests..."
+	./$(TARGET_SLIDING_WINDOW)
+
+run-circular-buffer: $(TARGET_CIRCULAR_BUFFER)
+	@echo "Running Circular Buffer tests..."
+	./$(TARGET_CIRCULAR_BUFFER)
+
 run-server: $(TARGET_SERVER)
 	@echo "Starting server..."
 	./$(TARGET_SERVER)
 
 # Run all tests (not server)
 .PHONY: run
-run: run-btree run-hashtable run-priority-queue run-drug-graph
+run: run-btree run-hashtable run-priority-queue run-drug-graph run-kdtree run-sliding-window run-circular-buffer
 
 # Clean
 .PHONY: clean
 clean:
-	rm -f $(OBJECTS_BTREE) $(OBJECTS_HASHTABLE) $(OBJECTS_PRIORITY_QUEUE) $(OBJECTS_SERVER) $(OBJECTDS_DRUG_GRAPH)
-	rm -f $(TARGET_BTREE) $(TARGET_HASHTABLE) $(TARGET_PRIORITY_QUEUE) $(TARGET_SERVER) $(TARGET_DRUG_GRAPH)
+	rm -f $(OBJECTS_BTREE) $(OBJECTS_HASHTABLE) $(OBJECTS_PRIORITY_QUEUE) $(OBJECTS_SERVER) $(OBJECTS_DRUG_GRAPH) $(OBJECTS_KDTREE) $(OBJECTS_SLIDING_WINDOW) $(OBJECTS_CIRCULAR_BUFFER)
+	rm -f $(TARGET_BTREE) $(TARGET_HASHTABLE) $(TARGET_PRIORITY_QUEUE) $(TARGET_SERVER) $(TARGET_DRUG_GRAPH) $(TARGET_KDTREE) $(TARGET_SLIDING_WINDOW) $(TARGET_CIRCULAR_BUFFER)
 	rm -f *.bin
 	@echo "🧹 Cleaned all build files"
 
@@ -150,4 +206,9 @@ help:
 	@echo "  make clean            - Clean all build files"
 	@echo "  make drug_graph       - Build Drug Graph test"
 	@echo "  make run-drug-graph   - Run Drug Graph test"
-	
+	@echo "  make kdtree           - Build KD-Tree test"
+	@echo "  make run-kdtree       - Run KD-Tree test"
+	@echo "  make sliding_window   - Build Sliding Window test"
+	@echo "  make run-sliding-window - Run Sliding Window test"
+	@echo "  make circular_buffer  - Build Circular Buffer test"
+	@echo "  make run-circular-buffer - Run Circular Buffer test"

@@ -1,11 +1,81 @@
-# Build/compiled files
+# Compiled Object files
 *.o
+*.obj
+*.ko
+*.elf
+
+# Compiled executables
 server
 test_*
+a.out
+
+# Binary data files
 *.bin
 *.dat
 
-# Dependencies
+# Build directories
+bin/
+build/
+dist/
+
+# Data directories (contains runtime data)
+data/
+
+# Dependencies (external libraries - header only)
 include/nlohmann/
-httplib.h
-json.hpp.2
+include/httplib.h
+include/json.hpp*
+
+# IDE/Editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.project
+.cproject
+.settings/
+
+# OS files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+Desktop.ini
+
+# Debugging files
+*.dSYM/
+*.su
+*.idb
+*.pdb
+
+# Core dumps
+core
+core.*
+vgcore.*
+
+# Temporary files
+*.tmp
+*.temp
+*.log
+*.bak
+*.swp
+*~
+
+# Compiled Dynamic libraries
+*.so
+*.dylib
+*.dll
+
+# Compiled Static libraries
+*.a
+*.lib
+*.la
+*.lo
+
+# Backup files
+*_backup
+*.old
