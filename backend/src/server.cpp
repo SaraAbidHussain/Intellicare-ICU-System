@@ -1,8 +1,8 @@
 #include <iostream>
 #include <string>
 #include <mutex>
-#include "../../include/httplib.h"
-#include "../../include/nlohmann/json.hpp"
+#include "../include/httplib.h"
+#include "../include/json.hpp"
 #include "data_structures/btree.h"
 #include "data_structures/priority_queue.h"
 #include "data_structures/hash_table.h"
