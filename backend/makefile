@@ -9,9 +9,12 @@ DATA_STRUCT_DIR := $(SRC_DIR)/data_structures
 MODELS_DIR := $(SRC_DIR)/models
 TESTS_DIR := tests
 INCLUDE_DIR := include
+SIM_DIR := $(SRC_DIR)/simulation
+ANALYSIS_DIR := $(SRC_DIR)/analysis
+
 
 # Include paths
-INCLUDES := -I$(SRC_DIR) -I$(DATA_STRUCT_DIR) -I$(MODELS_DIR) -I$(INCLUDE_DIR)
+INCLUDES := -I$(SRC_DIR) -I$(DATA_STRUCT_DIR) -I$(MODELS_DIR) -I$(INCLUDE_DIR) -I$(SIM_DIR) -I$(ANALYSIS_DIR)
 
 # Targets
 TARGET_BTREE := test_btree
@@ -21,6 +24,7 @@ TARGET_DRUG_GRAPH := test_drug_graph
 TARGET_KDTREE := test_kdtree
 TARGET_SLIDING_WINDOW := test_sliding_window
 TARGET_CIRCULAR_BUFFER := test_circular_buffer
+
 TARGET_SERVER := server
 
 # Source files for B-tree
@@ -74,8 +78,9 @@ SOURCES_SERVER := \
 	$(MODELS_DIR)/patient.cpp \
 	$(MODELS_DIR)/medication.cpp \
 	$(MODELS_DIR)/alert.cpp \
-	$(DATA_STRUCT_DIR)/drug_graph.cpp
-	
+	$(DATA_STRUCT_DIR)/drug_graph.cpp \
+	$(SIM_DIR)/vital_simulator.cpp \
+	$(ANALYSIS_DIR)/vital_analyzer.cpp
 
 # Object files
 OBJECTS_BTREE := $(SOURCES_BTREE:.cpp=.o)
@@ -89,47 +94,62 @@ OBJECTS_SERVER := $(SOURCES_SERVER:.cpp=.o)
 
 # Default target
 .PHONY: all
-all: $(TARGET_BTREE) $(TARGET_HASHTABLE) $(TARGET_PRIORITY_QUEUE) $(TARGET_SERVER) $(TARGET_DRUG_GRAPH) $(TARGET_KDTREE) $(TARGET_SLIDING_WINDOW) $(TARGET_CIRCULAR_BUFFER)
+all: $(TARGET_BTREE) $(TARGET_HASHTABLE) $(TARGET_PRIORITY_QUEUE) $(TARGET_SERVER) $(TARGET_DRUG_GRAPH) $(TARGET_KDTREE) $(TARGET_SLIDING_WINDOW) $(TARGET_CIRCULAR_BUFFER) 
 
 # Build B-tree test
+
 $(TARGET_BTREE): $(OBJECTS_BTREE)
-	$(CXX) $(LDFLAGS) -o $@ $^
+	$(CXX) $(CXXFLAGS) -o $@ $^ $(LDFLAGS)
 	@echo "✅ B-tree test compiled successfully!"
 
 # Build Hash Table test
+
 $(TARGET_HASHTABLE): $(OBJECTS_HASHTABLE)
-	$(CXX) $(LDFLAGS) -o $@ $^
+	$(CXX) $(CXXFLAGS) -o $@ $^ $(LDFLAGS)
 	@echo "✅ Hash Table test compiled successfully!"
 
 # Build Priority Queue test
+
 $(TARGET_PRIORITY_QUEUE): $(OBJECTS_PRIORITY_QUEUE)
-	$(CXX) $(LDFLAGS) -o $@ $^
+	$(CXX) $(CXXFLAGS) -o $@ $^ $(LDFLAGS)
 	@echo "✅ Priority Queue test compiled successfully!"
 
 # Build Drug Graph test
+
 $(TARGET_DRUG_GRAPH): $(OBJECTS_DRUG_GRAPH)
-	$(CXX) $(LDFLAGS) -o $@ $^
+	$(CXX) $(CXXFLAGS) -o $@ $^ $(LDFLAGS)
 	@echo "✅ Drug Graph test compiled successfully!"
 
 # Build KD-Tree test
+
 $(TARGET_KDTREE): $(OBJECTS_KDTREE)
-	$(CXX) $(LDFLAGS) -o $@ $^
+	$(CXX) $(CXXFLAGS) -o $@ $^ $(LDFLAGS)
 	@echo "✅ KD-Tree test compiled successfully!"
 
 # Build Sliding Window test
+
 $(TARGET_SLIDING_WINDOW): $(OBJECTS_SLIDING_WINDOW)
-	$(CXX) $(LDFLAGS) -o $@ $^
+	$(CXX) $(CXXFLAGS) -o $@ $^ $(LDFLAGS)
 	@echo "✅ Sliding Window test compiled successfully!"
 
 # Build Circular Buffer test
+
 $(TARGET_CIRCULAR_BUFFER): $(OBJECTS_CIRCULAR_BUFFER)
-	$(CXX) $(LDFLAGS) -o $@ $^
+	$(CXX) $(CXXFLAGS) -o $@ $^ $(LDFLAGS)
 	@echo "✅ Circular Buffer test compiled successfully!"
 
 # Build Server
+
 $(TARGET_SERVER): $(OBJECTS_SERVER)
-	$(CXX) $(LDFLAGS) -o $@ $^
+	$(CXX) $(CXXFLAGS) -o $@ $^ $(LDFLAGS)
 	@echo "✅ Server compiled successfully!"
+
+#create simulation and analysis directories
+$(SIM_DIR):
+	@mkdir -p $(SIM_DIR)
+
+$(ANALYSIS_DIR):
+	@mkdir -p $(ANALYSIS_DIR)
 
 # Build only specific targets
 .PHONY: btree hashtable priority_queue server drug_graph
@@ -179,6 +199,8 @@ run-circular-buffer: $(TARGET_CIRCULAR_BUFFER)
 run-server: $(TARGET_SERVER)
 	@echo "Starting server..."
 	./$(TARGET_SERVER)
+
+
 
 # Run all tests (not server)
 .PHONY: run

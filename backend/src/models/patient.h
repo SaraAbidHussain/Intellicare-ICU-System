@@ -1,3 +1,4 @@
+//file structure: backend/src/models/patient.h
 #ifndef PATIENT_H
 #define PATIENT_H
 

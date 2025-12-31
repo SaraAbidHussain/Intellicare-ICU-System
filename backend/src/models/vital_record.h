@@ -1,3 +1,4 @@
+//file structure: backend/src/models/vital_record.h
 #ifndef VITAL_RECORD_H
 #define VITAL_RECORD_H
 

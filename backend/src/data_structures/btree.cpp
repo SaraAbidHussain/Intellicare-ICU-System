@@ -316,18 +316,17 @@ long DiskBTree::searchHelper(DiskBTreeNode* node, long key) {
     
     return result;
 }
-VitalRecord* DiskBTree::search(long timestamp) {
+bool DiskBTree::search(long timestamp, VitalRecord& result) {
     DiskBTreeNode* root = loadNode(rootPosition);
     long dataPos = searchHelper(root, timestamp);
     deleteNode(root);
     
     if (dataPos != -1) {
-        VitalRecord* record = new VitalRecord();
-        *record = loadRecord(dataPos);
-        return record;
+        result = loadRecord(dataPos);
+        return true;
     }
     
-    return nullptr;
+    return false;
 }
 
 DiskBTreeNode* DiskBTree::searchNode(DiskBTreeNode* node, long key) {

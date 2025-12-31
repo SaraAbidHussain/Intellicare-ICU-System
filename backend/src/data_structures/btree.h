@@ -1,3 +1,4 @@
+//file structure: backend/src/data_structures/btree.h
 #ifndef BTREE_DISK_H
 #define BTREE_DISK_H
 
@@ -66,7 +67,8 @@ public:
     ~DiskBTree();
     
     void insert(long timestamp, const VitalRecord& record);
-    VitalRecord* search(long timestamp);
+    //VitalRecord* search(long timestamp);
+    bool search(long timestamp, VitalRecord& result);
     std::vector<VitalRecord> rangeQuery(long startTime, long endTime);
     
     int getRecordCount() const { return totalRecords; }

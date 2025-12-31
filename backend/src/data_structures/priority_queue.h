@@ -1,3 +1,4 @@
+//file structure: backend/src/data_structures/priority_queue.h
 #ifndef PRIORITY_QUEUE_H
 #define PRIORITY_QUEUE_H
 
@@ -38,6 +39,7 @@ public:
     void display() const;
     void displayTree() const;
     
+    std::vector<Alert> getAllAlertsSorted() const; 
     // Get alerts by priority
     std::vector<Alert> getAlertsByPriority(AlertPriority prio) const;
     std::vector<Alert> getUnacknowledgedAlerts() const;

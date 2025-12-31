@@ -1,3 +1,4 @@
+//file structure: backend/src/data_structures/hash_table.h
 #ifndef HASH_TABLE_H
 #define HASH_TABLE_H
 

@@ -1,0 +1,58 @@
+.live-terminal {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  background: rgba(0, 0, 0, 0.3);
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.terminal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.8rem 1rem;
+  background: rgba(0, 0, 0, 0.4);
+  border-bottom: 1px solid rgba(0, 255, 170, 0.2);
+}
+
+.terminal-title {
+  color: #00ffaa;
+  font-weight: 600;
+  font-size: 0.95rem;
+}
+
+.terminal-status {
+  color: #00ffaa;
+  font-size: 0.85rem;
+}
+
+.terminal-content {
+  flex: 1;
+  padding: 1rem;
+  overflow-y: auto;
+  font-family: 'Courier New', monospace;
+  font-size: 0.85rem;
+  line-height: 1.6;
+}
+
+.terminal-line {
+  margin-bottom: 0.3rem;
+  display: flex;
+  gap: 0.5rem;
+}
+
+.terminal-time {
+  color: #8892a6;
+  flex-shrink: 0;
+}
+
+.terminal-prefix {
+  flex-shrink: 0;
+  font-weight: 700;
+}
+
+.terminal-message {
+  flex: 1;
+  word-break: break-word;
+}

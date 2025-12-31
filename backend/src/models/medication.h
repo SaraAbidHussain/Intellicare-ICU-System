@@ -1,3 +1,5 @@
+//file structure: backend/src/models/medication.h
+
 #ifndef MEDICATION_H
 #define MEDICATION_H
 

@@ -1,3 +1,4 @@
+//file structure: backend/src/models/alert.h
 #ifndef ALERT_H
 #define ALERT_H
 

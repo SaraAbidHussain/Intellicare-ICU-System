@@ -93,7 +93,22 @@ Alert PriorityQueue::peekMin() const {
     }
     return heap[0];
 }
-
+// Get all alerts in priority order without removing them
+std::vector<Alert> PriorityQueue::getAllAlertsSorted() const {
+    if (heap.empty()) {
+        return std::vector<Alert>();
+    }
+    
+    // Create a copy of the heap
+    std::vector<Alert> sortedAlerts = heap;
+    
+    // Sort using Alert's comparison operator
+    // Since Alert::operator< is defined for min-heap (lower priority value = higher urgency)
+    // We sort in ascending order to get CRITICAL first
+    std::sort(sortedAlerts.begin(), sortedAlerts.end());
+    
+    return sortedAlerts;
+}
 // Display all alerts in priority order
 void PriorityQueue::display() const {
     std::cout << "\n╔════════════════════════════════════════════════════╗" << std::endl;

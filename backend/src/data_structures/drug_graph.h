@@ -1,3 +1,4 @@
+//file structure: backend/src/data_structures/drug_graph.h
 #ifndef DRUG_GRAPH_H
 #define DRUG_GRAPH_H
 
