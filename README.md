@@ -69,7 +69,7 @@ IntelliCare-ICU is an intelligent patient monitoring system designed for intensi
 
 ## 📅 Project Timeline
 
-### **Phase 1: Core Data Management** ✅ *Completed*
+### **Phase 1: Core Data Management**
 
 **Duration:** Week 1-2  
 **Status:** Production-ready
@@ -106,7 +106,7 @@ IntelliCare-ICU is an intelligent patient monitoring system designed for intensi
 
 ---
 
-### **Phase 2: Priority & Alert System** ✅ *Completed*
+### **Phase 2: Priority & Alert System**
 
 **Duration:** Week 2-3  
 **Status:** Deployed on AWS EC2
@@ -142,7 +142,7 @@ IntelliCare-ICU is an intelligent patient monitoring system designed for intensi
 
 ---
 
-### **Phase 3: Drug Safety Analysis** ✅ *Completed*
+### **Phase 3: Drug Safety Analysis**
 
 **Duration:** Week 3-4  
 **Status:** Integration complete
@@ -187,7 +187,7 @@ Space Complexity: O(V) for visited set and path storage
 
 ---
 
-### **Phase 4: Patient Grouping & Analytics** ✅ *Completed*
+### **Phase 4: Patient Grouping & Analytics**
 
 **Duration:** Week 4-5  
 **Status:** Fully operational
@@ -307,15 +307,14 @@ Alert: Gradual deterioration pattern detected
 
 | Data Structure | Purpose | Time Complexity | Space | Status |
 |----------------|---------|-----------------|-------|--------|
-| **B-Tree** | Vital signs storage & retrieval | O(log n) | O(n) | ✅ Deployed |
-| **Hash Table** | Patient & medication lookup | O(1) avg | O(n) | ✅ Deployed |
-| **Min-Heap** | Alert prioritization | O(log n) | O(n) | ✅ Deployed |
-| **Graph + DFS** | Drug interaction detection | O(V+E) | O(V) | ✅ Deployed |
-| **KD-Tree** | Patient clustering (5D) | O(log n) | O(n) | ✅ Deployed |
-| **Circular Buffer** | Fixed sliding window | O(1) | O(k) | ✅ Deployed |
-| **Sliding Window** | Continuous monitoring | O(1) insert | O(kp) | ✅ Deployed |
+| **B-Tree** | Vital signs storage & retrieval | O(log n) | O(n) | 
+| **Hash Table** | Patient & medication lookup | O(1) avg | O(n) | 
+| **Min-Heap** | Alert prioritization | O(log n) | O(n) | 
+| **Graph + DFS** | Drug interaction detection | O(V+E) | O(V) | 
+| **KD-Tree** | Patient clustering (5D) | O(log n) | O(n) | 
+| **Circular Buffer** | Fixed sliding window | O(1) | O(k) | 
+| **Sliding Window** | Continuous monitoring | O(1) insert | O(kp) | 
 
-*Note: n=records, V=vertices, E=edges, k=window size, p=patients*
 
 ---
 
@@ -521,7 +520,7 @@ Response: {
 
 ---
 
-## 🚀 Installation & Setup
+##  Installation & Setup
 
 ### Prerequisites
 
@@ -570,7 +569,7 @@ make clean && make
 
 ---
 
-## 🧪 Testing
+##  Testing
 
 ### Test Coverage
 
@@ -607,29 +606,29 @@ make test_all
 
 ```
 ========== TEST: KD-Tree Patient Clustering ==========
-✅ Basic operations: PASSED
-✅ Nearest neighbor: PASSED (found in 0.8ms)
-✅ K-nearest search: PASSED (5 neighbors in 1.2ms)
-✅ Similar patients: PASSED (3 clusters identified)
-✅ Range search: PASSED (15 patients within radius)
-✅ Batch build: PASSED (100 points in 12ms)
-✅ Persistence: PASSED (saved/loaded successfully)
+ Basic operations: PASSED
+ Nearest neighbor: PASSED (found in 0.8ms)
+ K-nearest search: PASSED (5 neighbors in 1.2ms)
+ Similar patients: PASSED (3 clusters identified)
+ Range search: PASSED (15 patients within radius)
+ Batch build: PASSED (100 points in 12ms)
+ Persistence: PASSED (saved/loaded successfully)
 
 ========== TEST: Sliding Window ==========
-✅ Basic operations: PASSED
-✅ Multiple patients: PASSED (3 windows active)
-✅ Statistics: PASSED (avg, min, max calculated)
-✅ Overwrite behavior: PASSED (old data removed)
-✅ Real-time simulation: PASSED (120 readings)
+ Basic operations: PASSED
+ Multiple patients: PASSED (3 windows active)
+ Statistics: PASSED (avg, min, max calculated)
+ Overwrite behavior: PASSED (old data removed)
+ Real-time simulation: PASSED (120 readings)
 
-ALL TESTS PASSED ✅
+ALL TESTS PASSED 
 ```
 
 ---
 
 ## 🎯 Future Roadmap
 
-### **Phase 5: Predictive Analysis** 🔄 *In Progress*
+### **Phase 5: Predictive Analysis** 
 
 **Estimated Duration:** 1-1.5 weeks
 
@@ -674,7 +673,7 @@ where w1, w2, w3 are tunable weights
 
 ---
 
-### **Phase 6: Polish & Real-time Features** 📅 *Planned*
+### **Phase 6: Polish & Real-time Features** 
 
 **Estimated Duration:** 1 week
 
@@ -774,36 +773,7 @@ GET /api/patients/:id/similar → 30-50ms
 
 ---
 
-## 🏆 Key Achievements
 
-### Technical Accomplishments
-
-- ✅ Built 7 custom data structures from scratch
-- ✅ Implemented disk-based persistence for all data
-- ✅ Designed RESTful API with 15+ endpoints
-- ✅ Achieved sub-millisecond patient lookup times
-- ✅ Successfully deployed on AWS EC2
-- ✅ Comprehensive test suite (50+ test cases)
-- ✅ Zero-dependency core (only C++ STL)
-
-### Algorithm Implementations
-
-- ✅ B-Tree with indexing and range queries
-- ✅ Depth-First Search for graph traversal
-- ✅ Min-Heap with heapify operations
-- ✅ KD-Tree with k-nearest neighbor search
-- ✅ Circular buffer with O(1) operations
-
-### Software Engineering
-
-- ✅ Clean separation of concerns (models, data structures, API)
-- ✅ Modular design for easy extension
-- ✅ Binary serialization for efficient I/O
-- ✅ CORS-enabled API for frontend integration
-- ✅ Comprehensive error handling
-- ✅ Git-based deployment workflow
-
----
 
 ## 📚 Project Structure
 
@@ -887,8 +857,6 @@ Computer Science Student
 ## 📊 Project Stats
 
 ```
-Lines of Code: ~8,000+
-Files: 25+
 Data Structures: 7 custom implementations
 API Endpoints: 15+
 Test Cases: 50+
@@ -896,10 +864,5 @@ Test Cases: 50+
 
 ---
 
-**Last Updated:** December 2024  
-**Version:** 1.0.0  
-**Status:** Phase 4 Complete | Phase 5 In Progress
-
----
 
 *This project demonstrates proficiency in data structures, algorithms, system design, backend development, and cloud deployment. Built entirely from scratch using core C++ principles.*
